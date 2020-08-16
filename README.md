@@ -4,7 +4,9 @@ The `rstsort` program can be used to construct a
 [directed graph](https://en.wikipedia.org/wiki/Directed_graph)
 and perform a
 [topological sort](https://en.wikipedia.org/wiki/Topological_sorting)
-on that graph.
+on that graph. It is roughly analogous to the
+[POSIX tsort](https://en.wikipedia.org/wiki/Tsort)
+program available on UNIX-like operating systems.
 
 The input is a series of edges or adjacency lists where the leftmost string is
 the name of the node and the rest of the strings on the line, separated by
