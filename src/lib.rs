@@ -74,27 +74,56 @@ impl<T> Digraph<T> {
     }
 }
 
-pub fn parse(s: &str) -> Digraph<String> {
-    let mut graph = Digraph::new();
-    let mut seen: HashMap<String, NodeHandle> = HashMap::new();
-    for line in s.split("\n") {
+pub struct DigraphParser {
+    graph: Digraph<String>,
+    seen: HashMap<String, NodeHandle>,
+}
+
+#[derive(Debug)]
+pub enum GraphParseError {
+}
+
+impl DigraphParser {
+    pub fn new() -> DigraphParser {
+        DigraphParser {
+            graph: Digraph::new(),
+            seen: HashMap::new(),
+        }
+    }
+
+    pub fn parse(mut self, s: &str) -> Result<Digraph<String>, GraphParseError> {
+        for line in s.split("\n") {
+            self.parse_line(line);
+        }
+        Ok(self.graph)
+    }
+
+    pub fn parse_line(&mut self, line: &str) {
+        let line = line.trim();
+        if line.len() == 0 {
+            // Skip blank lines
+            return;
+        }
         let mut handles: Vec<NodeHandle> = Vec::new();
         for name in line.split(" ") {
             let node_name = String::from(name);
-            if !seen.contains_key(&node_name) {
+            if !self.seen.contains_key(&node_name) {
                 let seen_name = node_name.clone();
-                let new_handle = graph.add_node(node_name);
-                seen.insert(seen_name, new_handle);
+                let new_handle = self.graph.add_node(node_name);
+                self.seen.insert(seen_name, new_handle);
             }
-            let h = seen.get(name).expect("Missing handle");
+            let h = self.seen.get(name).expect("Missing handle");
             handles.push(*h);
         }
         let outgoing = handles[0];
         for h in handles[1..].iter() {
-            graph.add_edge(outgoing, *h);
+            self.graph.add_edge(outgoing, *h);
         }
     }
-    graph
+
+    pub fn graph(self) -> Digraph<String> {
+        self.graph
+    }
 }
 
 #[cfg(test)]
@@ -205,7 +234,8 @@ mod tests {
         #[test]
         fn test_parse_single_node() {
             let s = "a";
-            let graph = parse(&s);
+            let parser = DigraphParser::new();
+            let graph = parser.parse(s).expect("Parse failed");
             assert_eq!(graph.node_count(), 1);
             let sorted = graph.tsort();
             assert_eq!(sorted.len(), graph.node_count());
@@ -227,7 +257,8 @@ mod tests {
         }
 
         fn test_parse(s: &str, expected: Vec<&str>) {
-            let graph = parse(s);
+            let parser = DigraphParser::new();
+            let graph = parser.parse(s).expect("Parse failed");
             assert_eq!(graph.node_count(), expected.len());
             let sorted = graph.tsort();
             assert_eq!(sorted.len(), graph.node_count());
@@ -243,6 +274,16 @@ mod tests {
         }
 
         #[test]
+        fn test_parse_single_edge_with_trailing_newline() {
+            test_parse("a b\n", vec!["a", "b"]);
+        }
+
+        #[test]
+        fn test_parse_single_edge_with_trailing_space() {
+            test_parse("a b ", vec!["a", "b"]);
+        }
+
+        #[test]
         fn test_parse_several_edges_from_one_node() {
             test_parse("a b c", vec!["a", "c", "b"]);
         }
@@ -250,6 +291,11 @@ mod tests {
         #[test]
         fn test_parse_multiple_lines() {
             test_parse("a b\nb c", vec!["a", "b", "c"]);
+        }
+
+        #[test]
+        fn test_parse_multiple_lines_with_blanks() {
+            test_parse("a b\n\nb c\n", vec!["a", "b", "c"]);
         }
     }
 }
