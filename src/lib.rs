@@ -3,7 +3,8 @@ mod arena;
 use std::collections::HashMap;
 use arena::*;
 
-pub type NodeHandle = SlotHandle;
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct NodeHandle(SlotHandle);
 
 pub struct Node<T> {
     data: T,
@@ -36,19 +37,20 @@ impl<T> Digraph<T> {
             data,
             edges: Vec::new(),
         };
-        self.nodes.add(node) 
+        let slot_handle = self.nodes.add(node);
+        NodeHandle(slot_handle)
     }
 
     pub fn node(&self, handle: NodeHandle) -> Option<&Node<T>> {
-        self.nodes.get(handle) 
+        self.nodes.get(handle.0) 
     }
 
     pub fn remove_node(&mut self, handle: NodeHandle) {
-        self.nodes.remove(handle);
+        self.nodes.remove(handle.0);
     }
 
     pub fn add_edge(&mut self, h1: NodeHandle, h2: NodeHandle) {
-        if let Some(node) = self.nodes.get_mut(h1) {
+        if let Some(node) = self.nodes.get_mut(h1.0) {
             node.edges.push(h2);
         }
     }
@@ -57,14 +59,14 @@ impl<T> Digraph<T> {
         let mut sorted = Vec::new();
         let mut seen = HashMap::new();
         for h in self.nodes.iter() {
-            self.tsort_internal(h, &mut sorted, &mut seen)?;
+            self.tsort_internal(NodeHandle(h), &mut sorted, &mut seen)?;
         }
         sorted.reverse();
         Ok(sorted)
     }
 
     fn tsort_internal(&self, h: NodeHandle, sorted: &mut Vec<NodeHandle>, seen: &mut HashMap<NodeHandle, SortStatus>) -> Result<(), TopologicalSortError> {
-        if let Some(node) = self.nodes.get(h) {
+        if let Some(node) = self.nodes.get(h.0) {
             seen.entry(h).or_insert(SortStatus::Unseen);
             match seen.get(&h).unwrap() {
                 SortStatus::Unseen => {
@@ -246,7 +248,7 @@ mod tests {
             Ok(sorted) => {
                 assert_eq!(sorted.len(), graph.node_count());
                 let values: Vec<i32> = sorted.iter().map(|h| {
-                    match graph.nodes.get(*h) {
+                    match graph.nodes.get(h.0) {
                         Some(node_ptr) => {
                             node_ptr.data
                         },
@@ -289,7 +291,7 @@ mod tests {
                 Ok(sorted) => {
                     assert_eq!(sorted.len(), graph.node_count());
                     let values: Vec<&str> = sorted.iter().map(|h| {
-                        match graph.nodes.get(*h) {
+                        match graph.nodes.get(h.0) {
                             Some(node_ptr) => {
                                 &node_ptr.data
                             },
@@ -318,7 +320,7 @@ mod tests {
                 Ok(sorted) => {
                     assert_eq!(sorted.len(), graph.node_count());
                     let values: Vec<&str> = sorted.iter().map(|h| {
-                        match graph.nodes.get(*h) {
+                        match graph.nodes.get(h.0) {
                             Some(node_ptr) => {
                                 &node_ptr.data
                             },
