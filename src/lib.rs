@@ -53,25 +53,52 @@ impl<T> Digraph<T> {
         }
     }
 
-    pub fn tsort(&self) -> Vec<NodeHandle> {
+    pub fn tsort(&self) -> Result<Vec<NodeHandle>, TopologicalSortError> {
         let mut sorted = Vec::new();
+        let mut seen = HashMap::new();
         for h in self.nodes.iter() {
-            self.tsort_internal(h, &mut sorted);
+            self.tsort_internal(h, &mut sorted, &mut seen)?;
         }
         sorted.reverse();
-        sorted
+        Ok(sorted)
     }
 
-    fn tsort_internal(&self, h: NodeHandle, sorted: &mut Vec<NodeHandle>) {
+    fn tsort_internal(&self, h: NodeHandle, sorted: &mut Vec<NodeHandle>, seen: &mut HashMap<NodeHandle, SortStatus>) -> Result<(), TopologicalSortError> {
         if let Some(node) = self.nodes.get(h) {
-            for edge in node.edges.iter() {
-                self.tsort_internal(*edge, sorted);
+            seen.entry(h).or_insert(SortStatus::Unseen);
+            match seen.get(&h).unwrap() {
+                SortStatus::Unseen => {
+                    seen.insert(h, SortStatus::Seen);
+                    for edge in node.edges.iter() {
+                        self.tsort_internal(*edge, sorted, seen)?;
+                    }
+                    sorted.push(h);
+                },
+                SortStatus::Seen => {
+                    return Err(TopologicalSortError::Cycle);
+                },
+                SortStatus::Processed => {
+                    // We've already done this node
+                },
             }
-            if !sorted.contains(&h) {
-                sorted.push(h);
-            }
+            seen.insert(h, SortStatus::Processed);
+            Ok(())
+        } else {
+            Err(TopologicalSortError::MissingNode)
         }
     }
+}
+
+#[derive(Debug)]
+pub enum TopologicalSortError {
+    MissingNode,
+    Cycle,
+}
+
+enum SortStatus {
+    Unseen,
+    Seen,
+    Processed,
 }
 
 pub struct DigraphParser {
@@ -215,17 +242,38 @@ mod tests {
         let h4 = graph.add_node(4);
         graph.add_edge(h2, h3);
         graph.add_edge(h1, h4);
-        let sorted = graph.tsort();
-        assert_eq!(sorted.len(), graph.node_count());
-        let values: Vec<i32> = sorted.iter().map(|h| {
-            match graph.nodes.get(*h) {
-                Some(node_ptr) => {
-                    node_ptr.data
-                },
-                None => -1,
-            }
-        }).collect();
-        assert_eq!(vec![1, 4, 2, 3], values);
+        match graph.tsort() {
+            Ok(sorted) => {
+                assert_eq!(sorted.len(), graph.node_count());
+                let values: Vec<i32> = sorted.iter().map(|h| {
+                    match graph.nodes.get(*h) {
+                        Some(node_ptr) => {
+                            node_ptr.data
+                        },
+                        None => -1,
+                    }
+                }).collect();
+                assert_eq!(vec![1, 4, 2, 3], values);
+            },
+            Err(err) => {
+                panic!("{:?}", err);
+            },
+        }
+    }
+
+    #[test]
+    fn test_topological_sort_with_cycle() {
+        let mut graph = Digraph::new();
+        let h1 = graph.add_node(1);
+        let h2 = graph.add_node(2);
+        graph.add_edge(h1, h2);
+        graph.add_edge(h2, h1);
+        match graph.tsort() {
+            Ok(_) => {
+                panic!("Sort should fail with a cycle");
+            },
+            Err(_) => {},
+        }
     }
 
     mod parser_tests {
@@ -237,17 +285,23 @@ mod tests {
             let parser = DigraphParser::new();
             let graph = parser.parse(s).expect("Parse failed");
             assert_eq!(graph.node_count(), 1);
-            let sorted = graph.tsort();
-            assert_eq!(sorted.len(), graph.node_count());
-            let values: Vec<&str> = sorted.iter().map(|h| {
-                match graph.nodes.get(*h) {
-                    Some(node_ptr) => {
-                        &node_ptr.data
-                    },
-                    None => "",
-                }
-            }).collect();
-            assert_eq!(vec!["a"], values);
+            match graph.tsort() {
+                Ok(sorted) => {
+                    assert_eq!(sorted.len(), graph.node_count());
+                    let values: Vec<&str> = sorted.iter().map(|h| {
+                        match graph.nodes.get(*h) {
+                            Some(node_ptr) => {
+                                &node_ptr.data
+                            },
+                            None => "",
+                        }
+                    }).collect();
+                    assert_eq!(vec!["a"], values);
+                },
+                Err(err) => {
+                    panic!("{:?}", err);
+                },
+            }
         }
 
         #[test]
@@ -260,17 +314,23 @@ mod tests {
             let parser = DigraphParser::new();
             let graph = parser.parse(s).expect("Parse failed");
             assert_eq!(graph.node_count(), expected.len());
-            let sorted = graph.tsort();
-            assert_eq!(sorted.len(), graph.node_count());
-            let values: Vec<&str> = sorted.iter().map(|h| {
-                match graph.nodes.get(*h) {
-                    Some(node_ptr) => {
-                        &node_ptr.data
-                    },
-                    None => "",
-                }
-            }).collect();
-            assert_eq!(expected, values);
+            match graph.tsort() {
+                Ok(sorted) => {
+                    assert_eq!(sorted.len(), graph.node_count());
+                    let values: Vec<&str> = sorted.iter().map(|h| {
+                        match graph.nodes.get(*h) {
+                            Some(node_ptr) => {
+                                &node_ptr.data
+                            },
+                            None => "",
+                        }
+                    }).collect();
+                    assert_eq!(expected, values);
+                },
+                Err(err) => {
+                    panic!("{:?}", err);
+                },
+            }
         }
 
         #[test]

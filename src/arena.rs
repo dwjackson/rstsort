@@ -1,6 +1,6 @@
 use core::slice::Iter;
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Eq, Hash)]
 pub struct SlotHandle {
     index: usize,
     generation: usize,

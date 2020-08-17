@@ -1,4 +1,4 @@
-use rstsort::DigraphParser;
+use rstsort::{DigraphParser, TopologicalSortError};
 use std::io;
 
 fn main() {
@@ -21,9 +21,22 @@ fn main() {
         }
     }
     let graph = parser.graph();
-    let sorted = graph.tsort();
-    for handle in sorted.iter() {
-        let node = graph.node(*handle).unwrap();
-        println!("{}", node.data());
+    match graph.tsort() {
+        Ok(sorted) => {
+            for handle in sorted.iter() {
+                let node = graph.node(*handle).unwrap();
+                println!("{}", node.data());
+            }
+        },
+        Err(err) => {
+            match err {
+                TopologicalSortError::Cycle => {
+                    println!("Cannot sort, graph contains a cycle");
+                },
+                _ => {
+                    panic!("{:?}", err);
+                }
+            }
+        },
     }
 }
