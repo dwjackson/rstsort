@@ -98,7 +98,7 @@ impl<T> Arena<T> {
         }
 
         let mut i = index;
-        while i > 0 && self.slots.len() > 0 && !self.slots[i].is_allocated {
+        while i > 0 && !self.slots.is_empty() && !self.slots[i].is_allocated {
             self.slots.remove(i);
             i -= 1;
         }

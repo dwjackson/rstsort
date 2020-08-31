@@ -96,6 +96,12 @@ impl<T> Digraph<T> {
     }
 }
 
+impl<T> Default for Digraph<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug)]
 pub enum TopologicalSortError {
     MissingNode,
@@ -125,7 +131,7 @@ impl DigraphParser {
     }
 
     pub fn parse(mut self, s: &str) -> Result<Digraph<String>, GraphParseError> {
-        for line in s.split("\n") {
+        for line in s.split('\n') {
             self.parse_line(line);
         }
         Ok(self.graph)
@@ -133,12 +139,12 @@ impl DigraphParser {
 
     pub fn parse_line(&mut self, line: &str) {
         let line = line.trim();
-        if line.len() == 0 {
+        if line.is_empty() {
             // Skip blank lines
             return;
         }
         let mut handles: Vec<NodeHandle> = Vec::new();
-        for name in line.split(" ") {
+        for name in line.split(' ') {
             let node_name = String::from(name);
             if !self.seen.contains_key(&node_name) {
                 let seen_name = node_name.clone();
@@ -156,6 +162,12 @@ impl DigraphParser {
 
     pub fn graph(self) -> Digraph<String> {
         self.graph
+    }
+}
+
+impl Default for DigraphParser {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
