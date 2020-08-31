@@ -1,7 +1,7 @@
 mod arena;
 
-use std::collections::HashMap;
 use arena::*;
+use std::collections::HashMap;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct NodeHandle(SlotHandle);
@@ -42,7 +42,7 @@ impl<T> Digraph<T> {
     }
 
     pub fn node(&self, handle: NodeHandle) -> Option<&Node<T>> {
-        self.nodes.get(handle.0) 
+        self.nodes.get(handle.0)
     }
 
     pub fn remove_node(&mut self, handle: NodeHandle) {
@@ -65,7 +65,12 @@ impl<T> Digraph<T> {
         Ok(sorted)
     }
 
-    fn tsort_internal(&self, h: NodeHandle, sorted: &mut Vec<NodeHandle>, seen: &mut HashMap<NodeHandle, SortStatus>) -> Result<(), TopologicalSortError> {
+    fn tsort_internal(
+        &self,
+        h: NodeHandle,
+        sorted: &mut Vec<NodeHandle>,
+        seen: &mut HashMap<NodeHandle, SortStatus>,
+    ) -> Result<(), TopologicalSortError> {
         if let Some(node) = self.nodes.get(h.0) {
             seen.entry(h).or_insert(SortStatus::Unseen);
             match seen.get(&h).unwrap() {
@@ -75,13 +80,13 @@ impl<T> Digraph<T> {
                         self.tsort_internal(*edge, sorted, seen)?;
                     }
                     sorted.push(h);
-                },
+                }
                 SortStatus::Seen => {
                     return Err(TopologicalSortError::Cycle);
-                },
+                }
                 SortStatus::Processed => {
                     // We've already done this node
-                },
+                }
             }
             seen.insert(h, SortStatus::Processed);
             Ok(())
@@ -109,8 +114,7 @@ pub struct DigraphParser {
 }
 
 #[derive(Debug)]
-pub enum GraphParseError {
-}
+pub enum GraphParseError {}
 
 impl DigraphParser {
     pub fn new() -> DigraphParser {
@@ -179,7 +183,7 @@ mod tests {
         match graph.node(handle) {
             Some(node) => {
                 assert_eq!(*node.data(), 42);
-            },
+            }
             None => panic!("No node found"),
         }
     }
@@ -201,16 +205,16 @@ mod tests {
         match graph.node(handle2) {
             Some(node) => {
                 assert_eq!(*node.data(), 2);
-            },
+            }
             None => {
                 panic!("Node not found");
-            },
+            }
         }
         match graph.node(handle) {
             Some(_) => {
                 panic!("Node should not exist");
-            },
-            None => {},
+            }
+            None => {}
         }
     }
 
@@ -221,16 +225,18 @@ mod tests {
         let h2 = graph.add_node(2);
         graph.add_edge(h1, h2);
         match graph.node(h1) {
-            None => { panic!("Node not found") },
+            None => panic!("Node not found"),
             Some(node) => {
                 assert_eq!(node.edges.len(), 1);
                 match graph.node(node.edges[0]) {
-                    None => { panic!("Edge not correct"); },
+                    None => {
+                        panic!("Edge not correct");
+                    }
                     Some(n) => {
                         assert_eq!(*n.data(), 2);
-                    },
+                    }
                 }
-            },
+            }
         }
     }
 
@@ -247,19 +253,18 @@ mod tests {
         match graph.tsort() {
             Ok(sorted) => {
                 assert_eq!(sorted.len(), graph.node_count());
-                let values: Vec<i32> = sorted.iter().map(|h| {
-                    match graph.nodes.get(h.0) {
-                        Some(node_ptr) => {
-                            node_ptr.data
-                        },
+                let values: Vec<i32> = sorted
+                    .iter()
+                    .map(|h| match graph.nodes.get(h.0) {
+                        Some(node_ptr) => node_ptr.data,
                         None => -1,
-                    }
-                }).collect();
+                    })
+                    .collect();
                 assert_eq!(vec![1, 4, 2, 3], values);
-            },
+            }
             Err(err) => {
                 panic!("{:?}", err);
-            },
+            }
         }
     }
 
@@ -273,8 +278,8 @@ mod tests {
         match graph.tsort() {
             Ok(_) => {
                 panic!("Sort should fail with a cycle");
-            },
-            Err(_) => {},
+            }
+            Err(_) => {}
         }
     }
 
@@ -290,19 +295,18 @@ mod tests {
             match graph.tsort() {
                 Ok(sorted) => {
                     assert_eq!(sorted.len(), graph.node_count());
-                    let values: Vec<&str> = sorted.iter().map(|h| {
-                        match graph.nodes.get(h.0) {
-                            Some(node_ptr) => {
-                                &node_ptr.data
-                            },
+                    let values: Vec<&str> = sorted
+                        .iter()
+                        .map(|h| match graph.nodes.get(h.0) {
+                            Some(node_ptr) => &node_ptr.data,
                             None => "",
-                        }
-                    }).collect();
+                        })
+                        .collect();
                     assert_eq!(vec!["a"], values);
-                },
+                }
                 Err(err) => {
                     panic!("{:?}", err);
-                },
+                }
             }
         }
 
@@ -319,19 +323,18 @@ mod tests {
             match graph.tsort() {
                 Ok(sorted) => {
                     assert_eq!(sorted.len(), graph.node_count());
-                    let values: Vec<&str> = sorted.iter().map(|h| {
-                        match graph.nodes.get(h.0) {
-                            Some(node_ptr) => {
-                                &node_ptr.data
-                            },
+                    let values: Vec<&str> = sorted
+                        .iter()
+                        .map(|h| match graph.nodes.get(h.0) {
+                            Some(node_ptr) => &node_ptr.data,
                             None => "",
-                        }
-                    }).collect();
+                        })
+                        .collect();
                     assert_eq!(expected, values);
-                },
+                }
                 Err(err) => {
                     panic!("{:?}", err);
-                },
+                }
             }
         }
 

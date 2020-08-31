@@ -1,14 +1,14 @@
 use rstsort::{DigraphParser, TopologicalSortError};
-use std::io;
 use std::env;
-use std::io::prelude::*;
 use std::fs::File;
+use std::io;
+use std::io::prelude::*;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
     let stdin = io::stdin();
-    
+
     let mut input: Box<dyn io::BufRead> = if args.len() > 1 {
         let file_name = &args[1];
         let file = match File::open(file_name) {
@@ -31,7 +31,7 @@ fn main() {
                 }
                 parser.parse_line(&line);
                 line.clear();
-            },
+            }
             Err(error) => {
                 panic!("{:?}", error);
             }
@@ -44,15 +44,13 @@ fn main() {
                 let node = graph.node(*handle).unwrap();
                 println!("{}", node.data());
             }
-        },
-        Err(err) => {
-            match err {
-                TopologicalSortError::Cycle => {
-                    println!("Cannot sort, graph contains a cycle");
-                },
-                _ => {
-                    panic!("{:?}", err);
-                }
+        }
+        Err(err) => match err {
+            TopologicalSortError::Cycle => {
+                println!("Cannot sort, graph contains a cycle");
+            }
+            _ => {
+                panic!("{:?}", err);
             }
         },
     }

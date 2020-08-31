@@ -49,10 +49,7 @@ impl<T> Arena<T> {
             generation = self.slots[index].generation;
         }
         self.count += 1;
-        SlotHandle {
-            index,
-            generation,
-        }
+        SlotHandle { index, generation }
     }
 
     pub fn get(&self, handle: SlotHandle) -> Option<&T> {
@@ -66,7 +63,7 @@ impl<T> Arena<T> {
                 } else {
                     None
                 }
-            },
+            }
             None => None,
         }
     }
@@ -82,7 +79,7 @@ impl<T> Arena<T> {
                 } else {
                     None
                 }
-            },
+            }
             None => None,
         }
     }
@@ -119,10 +116,7 @@ pub struct AllocatedSlotIterator<'a, T> {
 
 impl<'a, T> AllocatedSlotIterator<'a, T> {
     fn new(iter: Iter<'a, Slot<T>>) -> AllocatedSlotIterator<'a, T> {
-        AllocatedSlotIterator {
-            iter,
-            index: 0,
-        }
+        AllocatedSlotIterator { iter, index: 0 }
     }
 }
 
@@ -142,7 +136,7 @@ impl<'a, T> Iterator for AllocatedSlotIterator<'a, T> {
                 } else {
                     None
                 }
-            },
+            }
             None => None,
         }
     }
@@ -166,10 +160,10 @@ mod tests {
             match arena.get(h) {
                 Some(x) => {
                     assert_eq!(*x, v[i]);
-                },
+                }
                 None => {
                     panic!("No handle in iterator");
-                },
+                }
             }
             i += 1;
             iterated = true;
