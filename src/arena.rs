@@ -56,32 +56,18 @@ impl<T> Arena<T> {
         if handle.index > self.slots.len() {
             return None;
         }
-        match self.slots.get(handle.index) {
-            Some(slot) => {
-                if slot.generation == handle.generation {
-                    Some(&slot.data)
-                } else {
-                    None
-                }
-            }
-            None => None,
-        }
+        self.slots.get(handle.index).filter(|slot| {
+            slot.generation == handle.generation
+        }).map(|slot| &slot.data)
     }
 
     pub fn get_mut(&mut self, handle: SlotHandle) -> Option<&mut T> {
         if handle.index > self.slots.len() {
             return None;
         }
-        match self.slots.get_mut(handle.index) {
-            Some(slot) => {
-                if slot.generation == handle.generation {
-                    Some(&mut slot.data)
-                } else {
-                    None
-                }
-            }
-            None => None,
-        }
+        self.slots.get_mut(handle.index).filter(|slot| {
+            slot.generation == handle.generation
+        }).map(|slot| &mut slot.data)
     }
 
     pub fn remove(&mut self, handle: SlotHandle) {
